@@ -14,11 +14,3 @@
  * limitations under the License.
  */
 
-rootProject.name = "Configuration"
-
-include(
-    ":core",
-    ":gson",
-    ":jackson",
-    ":yaml"
-)

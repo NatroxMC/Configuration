@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+dependencies {
+    implementation("com.google.code.gson:gson:2.9.0")
+}
 
 tasks.withType<Jar> {
     archiveFileName.set("configuration-gson.jar")

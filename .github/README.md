@@ -2,7 +2,7 @@
 [![license](https://img.shields.io/github/license/NatroxMC/Configuration?style=for-the-badge&color=b2204c)](../LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=for-the-badge)](https://github.com/RichardLitt/standard-readme)
 
-A simple configuration library for Java projects
+# Note: NOT READY FOR PRODUCTION
 
 # Table of contents
 - [Why use Configuration?](#why-use-configuration)

@@ -38,7 +38,7 @@ The following explains in detail how to use Common and what it does.
 
 # Contributing
 See [the contributing file](CONTRIBUTING.md)!
-All WIP features are previewed as Draft PRs
+All WIP features are previewed as Draft PRs!
 
 # License
 This project is licensed under the [Apache License Version 2.0](../LICENSE).

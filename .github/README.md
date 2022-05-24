@@ -6,8 +6,8 @@
 
 # Table of contents
 - [Why use Configuration?](#why-use-configuration)
-- [How to use](#how-to-use)
-  - [Add to your project](#add-to-your-project)
+- [Advantages & Disadvantages](#advantages-and-disadvantages)
+- [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -15,8 +15,22 @@
 
 Coming soon.
 
-# How to Use
-The following explains in detail how to use Configuration and what it does.
+# Advantages and Disadvantages
+
+Coming soon.
+
+## Advantages
+
+- Coming soon
+- Coming soon
+
+## Disadvantages
+
+- Coming soon
+- Coming soon
+
+# Usage
+The following explains in detail how to use Common and what it does.
 
 # Add to your project
 - Gradle: (Not yet available)

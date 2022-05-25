@@ -28,7 +28,7 @@ Coming soon.
 - Coming soon
 
 # Usage
-The following explains in detail how to use Common and what it does.
+The following explains in detail how to use Configuration and what it does.
 
 # Add to your project
 - Gradle: (Not yet available)

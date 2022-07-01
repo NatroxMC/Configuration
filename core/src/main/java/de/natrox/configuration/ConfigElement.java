@@ -16,6 +16,8 @@
 
 package de.natrox.configuration;
 
+import java.util.Objects;
+
 public class ConfigElement<V> {
 
     private V value;
@@ -35,5 +37,20 @@ public class ConfigElement<V> {
     public V value(V value) {
         this.value = value;
         return this.value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        ConfigElement<?> that = (ConfigElement<?>) o;
+        return Objects.equals(this.value, that.value);
+    }
+
+    @Override
+    public String toString() {
+        return "ConfigElement[" +
+            "value=" + this.value +
+            ']';
     }
 }

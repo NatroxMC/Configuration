@@ -34,8 +34,8 @@ public class ConfigAdapter extends TypeAdapter<Config> {
     private final Gson gson = new GsonBuilder().create();
 
     @Override
-    public void write(JsonWriter out, Config value) throws IOException {
-        gson.toJson(this.convertCluster(value), out);
+    public void write(JsonWriter out, Config value) {
+        this.gson.toJson(this.convertCluster(value), out);
     }
 
     @Override

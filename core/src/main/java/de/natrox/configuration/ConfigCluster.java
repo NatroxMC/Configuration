@@ -35,7 +35,7 @@ public class ConfigCluster {
 
     protected <V> void add(String[] key, V value, int depth) {
         if(key.length - depth > 1)
-            this.getCluster(key[depth]).add(key, value, depth+1);
+            this.getCluster(key[depth]).add(key, value, depth + 1);
         else if(key.length - depth == 1)
             this.properties.put(key[depth], ConfigElement.of(value));
         else
@@ -48,7 +48,7 @@ public class ConfigCluster {
                 return null;
             return expected.cast(this.properties.get(key[depth]).value());
         }
-        return this.getCluster(key[depth]).get(key, expected, depth+1);
+        return this.getCluster(key[depth]).get(key, expected, depth + 1);
     }
 
     public @NotNull Map<String, ConfigElement<?>> properties() {
@@ -71,11 +71,5 @@ public class ConfigCluster {
 
     @NotNull void addProperty(String localKey, ConfigElement<?> property) {
         this.properties.put(localKey, property);
-    }
-
-    public @Nullable Object get(String key) {
-        if(!this.properties.containsKey(key))
-            return null;
-        return this.properties.get(key).value();
     }
 }

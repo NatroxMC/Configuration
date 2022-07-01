@@ -28,7 +28,7 @@ public class Config extends ConfigCluster {
         return this;
     }
 
-    public <V> @Nullable V get(@NotNull String key, Class<V> expected) {
+    public <V> @Nullable V get(@NotNull String key, @NotNull Class<V> expected) {
         this.validateKey(key);
         Check.notNull(expected, "Expected class must not be null.");
         return super.get(key.split("\\."), expected, 0);

@@ -39,6 +39,7 @@ subprojects {
 
     dependencies {
         implementation("org.jetbrains:annotations:23.0.0")
+        implementation(files("D:\\intelliJ\\natrox\\Common\\build\\libs\\common.jar"))
     }
 
     tasks.withType<JavaCompile> {

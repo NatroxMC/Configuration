@@ -33,30 +33,22 @@ public class ConfigCluster {
         this.children = new HashMap<>();
     }
 
-    protected <V> @NotNull ConfigCluster add(String[] key, V value) {
-        if(key.length > 1) {
-            String[] dropped = new String[key.length - 1];
-            System.arraycopy(key, 1, dropped, 0, key.length - 1);
-            this.getCluster(key[0]).add(dropped, value);
-        } else if(key.length == 1)
-            properties.put(key[0], ConfigElement.of(value));
-        return this;
+    protected <V> void add(String[] key, V value, int depth) {
+        if(key.length - depth > 1)
+            this.getCluster(key[depth]).add(key, value, depth+1);
+        else if(key.length - depth == 1)
+            this.properties.put(key[depth], ConfigElement.of(value));
+        else
+            throw new IllegalStateException("Depth equals zero or is lower.");
     }
 
-    protected @Nullable Object get(String[] key) {
-        if(key.length == 1)
-            return properties.get(key[0]).value();
-        String[] dropped = new String[key.length - 1];
-        System.arraycopy(key, 1, dropped, 0, key.length - 1);
-        return this.getCluster(key[0]).get(dropped);
-    }
-
-    protected <V> @Nullable V getStrict(String[] key, Class<V> expected) {
-        if(key.length == 1)
-            return expected.cast(properties.get(key[0]).value());
-        String[] dropped = new String[key.length - 1];
-        System.arraycopy(key, 1, dropped, 0, key.length - 1);
-        return this.getCluster(key[0]).getStrict(dropped, expected);
+    protected <V> @Nullable V get(String[] key, Class<V> expected, int depth) {
+        if(key.length - depth == 1) {
+            if(!this.properties.containsKey(key[depth]))
+                return null;
+            return expected.cast(this.properties.get(key[depth]).value());
+        }
+        return this.getCluster(key[depth]).get(key, expected, depth+1);
     }
 
     public @NotNull Map<String, ConfigElement<?>> properties() {
@@ -68,26 +60,22 @@ public class ConfigCluster {
     }
 
     private @NotNull ConfigCluster getCluster(String key) {
-        if(!children.containsKey(key))
-            children.put(key, new ConfigCluster());
-        return children.get(key);
+        if(!this.children.containsKey(key))
+            this.children.put(key, new ConfigCluster());
+        return this.children.get(key);
     }
 
-    @NotNull ConfigCluster addCluster(String key, ConfigCluster cluster) {
-        //assert key does not contain "."
-        children.put(key, cluster);
-        return this;
+    @NotNull void addCluster(String localKey, ConfigCluster cluster) {
+        this.children.put(localKey, cluster);
     }
 
-    @NotNull ConfigCluster addProperty(String key, ConfigElement<?> property) {
-        //assert key does not contain "."
-        properties.put(key, property);
-        return this;
+    @NotNull void addProperty(String localKey, ConfigElement<?> property) {
+        this.properties.put(localKey, property);
     }
 
     public @Nullable Object get(String key) {
-        if(!properties.containsKey(key))
+        if(!this.properties.containsKey(key))
             return null;
-        return properties.get(key).value();
+        return this.properties.get(key).value();
     }
 }

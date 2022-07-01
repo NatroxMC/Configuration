@@ -16,12 +16,28 @@
 
 package de.natrox.configuration;
 
+import de.natrox.common.validate.Check;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class Config extends ConfigCluster {
 
-    public <V> @NotNull Config add(String key, V value) {
-        super.add(key.split("\\."), value);
+    public <V> @NotNull Config add(@NotNull String key, @Nullable V value) {
+        this.validateKey(key);
+        super.add(key.split("\\."), value, 0);
         return this;
+    }
+
+    public <V> @Nullable V get(@NotNull String key, Class<V> expected) {
+        this.validateKey(key);
+        Check.notNull(expected, "Expected class must not be null.");
+        return super.get(key.split("\\."), expected, 0);
+    }
+
+    private void validateKey(String key) {
+        Check.notNull(key, "Key must not be null.");
+        Check.stateCondition("".equals(key), "Key must not be empty.");
+        Check.stateCondition(key.contains("..") || key.startsWith("."), "Cluster key must not be empty.");
+        Check.stateCondition(key.endsWith("."), "Property key must not be empty.");
     }
 }

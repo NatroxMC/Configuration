@@ -31,7 +31,16 @@ import java.util.Set;
 
 public class ConfigAdapter extends TypeAdapter<Config> {
 
-    private final Gson gson = new GsonBuilder().create();
+    private static final Gson DEFAULT_GSON = new GsonBuilder().create();
+    private final Gson gson;
+
+    public ConfigAdapter() {
+        this.gson = DEFAULT_GSON;
+    }
+
+    public ConfigAdapter(Gson gson) {
+        this.gson = gson;
+    }
 
     @Override
     public void write(JsonWriter out, Config value) {

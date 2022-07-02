@@ -24,11 +24,11 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import de.natrox.common.container.Pair;
-import de.natrox.common.validate.Check;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class ConfigAdapter extends TypeAdapter<Configuration> {
 
@@ -52,7 +52,6 @@ public class ConfigAdapter extends TypeAdapter<Configuration> {
         ConfigCluster value = new ConfigCluster();
         if (in.peek().equals(JsonToken.BEGIN_OBJECT)) {
             in.beginObject();
-            boolean shortened = false;
             String name;
             while (in.peek().equals(JsonToken.NAME)) {
                 name = in.nextName();
@@ -85,8 +84,8 @@ public class ConfigAdapter extends TypeAdapter<Configuration> {
         JsonObject value = new JsonObject();
         if (cluster.hasValue())
             value.add("value", gson.toJsonTree(cluster.value()));
-        for (Map.Entry<String, ConfigCluster> childInfo : cluster.children().entrySet()) {
-            if(childInfo.getValue().hasChildren())
+        for (Map.Entry<String, ConfigCluster> childInfo : cluster.subCluster().entrySet()) {
+            if (childInfo.getValue().hasSubCluster())
                 value.add(childInfo.getKey(), convertCluster(childInfo.getValue()));
             else
                 value.add(childInfo.getKey(), gson.toJsonTree(childInfo.getValue().value()));

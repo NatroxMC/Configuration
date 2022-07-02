@@ -20,27 +20,33 @@ import de.natrox.common.container.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConfigCluster {
 
+    private final Map<String, ConfigCluster> subCluster;
     private Object value;
-    private final Map<String, ConfigCluster> children;
 
     ConfigCluster() {
-        this.children = new HashMap<>();
+        this.subCluster = new HashMap<>();
     }
 
     protected <V> void set(String[] key, V value, int depth) {
-        if(key.length - depth > 0)
-            this.getCluster(key[depth]).set(key, value, depth + 1);
-        else
+        if (key.length - depth > 0) {
+            if ("*".equals(key[depth]))
+                for (ConfigCluster subCluster : this.subCluster.values())
+                    subCluster.set(key, value, depth + 1);
+            else
+                this.getCluster(key[depth]).set(key, value, depth + 1);
+        } else
             this.value = value;
     }
 
     protected <V> @Nullable V get(String[] key, Class<V> expected, int depth) {
-        if(key.length - depth == 0) {
-            if(!this.hasValue())
+        if (key.length - depth == 0) {
+            if (!this.hasValue())
                 return null;
             return expected.cast(this.value());
         }
@@ -51,28 +57,28 @@ public class ConfigCluster {
         return this.value;
     }
 
-    public @NotNull Map<String, ConfigCluster> children() {
-        return Collections.unmodifiableMap(this.children);
+    public @NotNull Map<String, ConfigCluster> subCluster() {
+        return Collections.unmodifiableMap(this.subCluster);
     }
 
     private @NotNull ConfigCluster getCluster(String key) {
-        if(!this.children.containsKey(key))
-            this.children.put(key, new ConfigCluster());
-        return this.children.get(key);
+        if (!this.subCluster.containsKey(key))
+            this.subCluster.put(key, new ConfigCluster());
+        return this.subCluster.get(key);
     }
 
-    void addChildrenPaired(Iterable<? extends  Pair<String, ConfigCluster>> childInfos) {
+    void addClusterPaired(Iterable<? extends Pair<String, ConfigCluster>> childInfos) {
         for (Pair<String, ConfigCluster> childInfo : childInfos)
             addChild(childInfo.first(), childInfo.second());
     }
 
-    void addChildrenEntries(Iterable<? extends Map.Entry<String, ConfigCluster>> childInfos) {
+    void addClusterEntries(Iterable<? extends Map.Entry<String, ConfigCluster>> childInfos) {
         for (Map.Entry<String, ConfigCluster> childInfo : childInfos)
             addChild(childInfo.getKey(), childInfo.getValue());
     }
 
     void addChild(String localKey, ConfigCluster child) {
-        this.children.put(localKey, child);
+        this.subCluster.put(localKey, child);
     }
 
     void setValue(Object value) {
@@ -83,7 +89,7 @@ public class ConfigCluster {
         return this.value != null;
     }
 
-    boolean hasChildren() {
-        return !this.children.isEmpty();
+    boolean hasSubCluster() {
+        return !this.subCluster.isEmpty();
     }
 }

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 public class Configuration extends ConfigCluster {
 
     Configuration(ConfigCluster cluster) {
-        this.addChildrenEntries(cluster.children().entrySet());
+        this.addClusterEntries(cluster.subCluster().entrySet());
     }
 
     public Configuration() {
@@ -38,6 +38,7 @@ public class Configuration extends ConfigCluster {
 
     public <V> @Nullable V get(@NotNull String key, @NotNull Class<V> expected) {
         Check.notNull(expected, "Expected class must not be null.");
+        Check.stateCondition(key.contains("*"), "'*' expressions forbidden in getters.");
         return super.get(this.validateKey(key), expected, 0);
     }
 
@@ -47,13 +48,13 @@ public class Configuration extends ConfigCluster {
         Check.stateCondition(key.contains("..") || key.startsWith("."), "Cluster key must not be empty.");
         Check.stateCondition(key.endsWith("."), "Property key must not be empty.");
         String[] keys = key.split("\\.");
-        for(String singleKey : keys)
+        for (String singleKey : keys)
             this.validateSingleKey(singleKey);
         return keys;
     }
 
     private void validateSingleKey(String singleKey) {
-        if(!"*".equals(singleKey))
+        if (!"*".equals(singleKey))
             Check.stateCondition(singleKey.contains("*"), "Key must not contain '*'.");
         Check.stateCondition(singleKey.equals("children"), "Key must not equal \"children\", as this expression could cause problems.");
         Check.stateCondition(singleKey.equals("value"), "Key must not equal \"value\", as this expression could cause problems.");

@@ -53,6 +53,15 @@ public class ConfigCluster {
         return this.getCluster(key[depth]).get(key, expected, depth + 1);
     }
 
+    protected <V> @Nullable V get(String[] key, int depth) {
+        if (key.length - depth == 0) {
+            if (!this.hasValue())
+                return null;
+            return (V) this.value().getClass().cast(this.value());
+        }
+        return this.getCluster(key[depth]).get(key, depth + 1);
+    }
+
     protected Object value() {
         return this.value;
     }

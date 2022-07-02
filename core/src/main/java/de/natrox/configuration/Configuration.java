@@ -42,6 +42,11 @@ public class Configuration extends ConfigCluster {
         return super.get(this.validateKey(key), expected, 0);
     }
 
+    public <V> @Nullable V get(@NotNull String key) {
+        Check.stateCondition(key.contains("*"), "'*' expressions forbidden in getters.");
+        return super.get(this.validateKey(key), 0);
+    }
+
     private String[] validateKey(String key) {
         Check.notNull(key, "Key must not be null.");
         Check.stateCondition("".equals(key), "Key must not be empty.");

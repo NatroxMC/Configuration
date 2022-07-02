@@ -17,6 +17,12 @@
 dependencies {
     implementation(project(":core"))
     implementation("com.google.code.gson:gson:2.9.0")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.8.2")
+    testImplementation("org.junit.platform:junit-platform-suite-api:1.8.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-suite-engine:1.8.2")
 }
 
 tasks.withType<Jar> {

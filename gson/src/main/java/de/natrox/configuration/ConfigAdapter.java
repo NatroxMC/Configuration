@@ -23,15 +23,16 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import de.natrox.common.container.Pair;
+import de.natrox.common.validate.Check;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class ConfigAdapter extends TypeAdapter<Config> {
+public class ConfigAdapter extends TypeAdapter<Configuration> {
 
-    private static final Gson DEFAULT_GSON = new GsonBuilder().create();
+    private static final Gson DEFAULT_GSON = new GsonBuilder().serializeNulls().create();
     private final Gson gson;
 
     public ConfigAdapter() {
@@ -43,75 +44,53 @@ public class ConfigAdapter extends TypeAdapter<Config> {
     }
 
     @Override
-    public void write(JsonWriter out, Config value) {
-        this.gson.toJson(this.convertCluster(value), out);
+    public Configuration read(JsonReader in) throws IOException {
+        return new Configuration(this.convertCluster(in));
+    }
+
+    private ConfigCluster convertCluster(JsonReader in) throws IOException {
+        ConfigCluster value = new ConfigCluster();
+        if (in.peek().equals(JsonToken.BEGIN_OBJECT)) {
+            in.beginObject();
+            boolean shortened = false;
+            String name;
+            while (in.peek().equals(JsonToken.NAME)) {
+                name = in.nextName();
+                if ("value".equals(name))
+                    value.setValue(gson.fromJson(in, Object.class));
+                else
+                    value.addChild(name, convertCluster(in));
+            }
+            in.endObject();
+        } else
+            value.setValue(gson.fromJson(in, Object.class));
+        return value;
+    }
+
+    private Iterable<? extends Pair<String, ConfigCluster>> convertChildren(JsonReader in) throws IOException {
+        Set<Pair<String, ConfigCluster>> value = new HashSet<>();
+        in.beginObject();
+        while (in.peek() == JsonToken.NAME)
+            value.add(Pair.of(in.nextName(), this.convertCluster(in)));
+        in.endObject();
+        return value;
     }
 
     @Override
-    public Config read(JsonReader in) throws IOException {
-        return this.convertCluster(in);
-    }
-
-    private Config convertCluster(JsonReader in) throws IOException {
-        Config value = new Config();
-        in.beginObject();
-        while(in.peek() == JsonToken.NAME) {
-            String name = in.nextName();
-            if("children".equals(name))
-                for(Map.Entry<String, ConfigCluster> child : this.convertChildren(in))
-                    value.addCluster(child.getKey(), child.getValue());
-            else if("properties".equals(name))
-                for(Map.Entry<String, ConfigElement<?>> child : this.convertProperties(in))
-                    value.addProperty(child.getKey(), child.getValue());
-            else
-                throw new RuntimeException();
-        }
-        in.endObject();
-        return value;
-    }
-
-    private Set<Map.Entry<String, ConfigCluster>> convertChildren(JsonReader in) throws IOException {
-        Set<Map.Entry<String, ConfigCluster>> value = new HashSet<>();
-        in.beginObject();
-        while(in.peek() == JsonToken.NAME)
-            value.add(Map.entry(in.nextName(), this.convertCluster(in)));
-        in.endObject();
-        return value;
-    }
-
-    private Set<Map.Entry<String, ConfigElement<?>>> convertProperties(JsonReader in) throws IOException {
-        Set<Map.Entry<String, ConfigElement<?>>> value = new HashSet<>();
-        in.beginObject();
-        while(in.peek() != JsonToken.END_OBJECT)
-            value.add(Map.entry(in.nextName(), this.convertElement(in)));
-        in.endObject();
-        return value;
-    }
-
-    private ConfigElement<?> convertElement(JsonReader in) throws IOException {
-        if(in.peek().equals(JsonToken.STRING))
-            return ConfigElement.of(in.nextString());
-        return ConfigElement.of(gson.fromJson(in, Object.class));
+    public void write(JsonWriter out, Configuration value) {
+        this.gson.toJson(this.convertCluster(value), out);
     }
 
     private JsonObject convertCluster(ConfigCluster cluster) {
         JsonObject value = new JsonObject();
-        value.add("children", this.convertChildren(cluster.children().entrySet()));
-        value.add("properties", this.convertProperties(cluster.properties().entrySet()));
-        return value;
-    }
-
-    private JsonObject convertChildren(Set<Map.Entry<String, ConfigCluster>> entrySet) {
-        JsonObject value = new JsonObject();
-        for(Map.Entry<String, ConfigCluster> entry : entrySet)
-            value.add(entry.getKey(), this.convertCluster(entry.getValue()));
-        return value;
-    }
-
-    private JsonObject convertProperties(Set<Map.Entry<String, ConfigElement<?>>> entrySet) {
-        JsonObject value = new JsonObject();
-        for(Map.Entry<String, ConfigElement<?>> entry : entrySet)
-            value.add(entry.getKey(), gson.toJsonTree(entry.getValue().value()));
+        if (cluster.hasValue())
+            value.add("value", gson.toJsonTree(cluster.value()));
+        for (Map.Entry<String, ConfigCluster> childInfo : cluster.children().entrySet()) {
+            if(childInfo.getValue().hasChildren())
+                value.add(childInfo.getKey(), convertCluster(childInfo.getValue()));
+            else
+                value.add(childInfo.getKey(), gson.toJsonTree(childInfo.getValue().value()));
+        }
         return value;
     }
 }

@@ -16,43 +16,39 @@
 
 package de.natrox.configuration;
 
+import de.natrox.common.container.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigCluster {
 
-    private final Map<String, ConfigElement<?>> properties;
+    private Object value;
     private final Map<String, ConfigCluster> children;
 
     ConfigCluster() {
-        this.properties = new HashMap<>();
         this.children = new HashMap<>();
     }
 
-    protected <V> void add(String[] key, V value, int depth) {
-        if(key.length - depth > 1)
-            this.getCluster(key[depth]).add(key, value, depth + 1);
-        else if(key.length - depth == 1)
-            this.properties.put(key[depth], ConfigElement.of(value));
+    protected <V> void set(String[] key, V value, int depth) {
+        if(key.length - depth > 0)
+            this.getCluster(key[depth]).set(key, value, depth + 1);
         else
-            throw new IllegalStateException("Depth equals zero or is lower.");
+            this.value = value;
     }
 
     protected <V> @Nullable V get(String[] key, Class<V> expected, int depth) {
-        if(key.length - depth == 1) {
-            if(!this.properties.containsKey(key[depth]))
+        if(key.length - depth == 0) {
+            if(!this.hasValue())
                 return null;
-            return expected.cast(this.properties.get(key[depth]).value());
+            return expected.cast(this.value());
         }
         return this.getCluster(key[depth]).get(key, expected, depth + 1);
     }
 
-    public @NotNull Map<String, ConfigElement<?>> properties() {
-        return Collections.unmodifiableMap(this.properties);
+    protected Object value() {
+        return this.value;
     }
 
     public @NotNull Map<String, ConfigCluster> children() {
@@ -65,11 +61,29 @@ public class ConfigCluster {
         return this.children.get(key);
     }
 
-    @NotNull void addCluster(String localKey, ConfigCluster cluster) {
-        this.children.put(localKey, cluster);
+    void addChildrenPaired(Iterable<? extends  Pair<String, ConfigCluster>> childInfos) {
+        for (Pair<String, ConfigCluster> childInfo : childInfos)
+            addChild(childInfo.first(), childInfo.second());
     }
 
-    @NotNull void addProperty(String localKey, ConfigElement<?> property) {
-        this.properties.put(localKey, property);
+    void addChildrenEntries(Iterable<? extends Map.Entry<String, ConfigCluster>> childInfos) {
+        for (Map.Entry<String, ConfigCluster> childInfo : childInfos)
+            addChild(childInfo.getKey(), childInfo.getValue());
+    }
+
+    void addChild(String localKey, ConfigCluster child) {
+        this.children.put(localKey, child);
+    }
+
+    void setValue(Object value) {
+        this.value = value;
+    }
+
+    boolean hasValue() {
+        return this.value != null;
+    }
+
+    boolean hasChildren() {
+        return !this.children.isEmpty();
     }
 }

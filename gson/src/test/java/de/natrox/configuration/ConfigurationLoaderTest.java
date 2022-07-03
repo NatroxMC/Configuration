@@ -19,6 +19,7 @@ package de.natrox.configuration;
 import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -30,17 +31,23 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+//This file will be rewritten later.
 class ConfigurationLoaderTest {
 
+    private static final boolean keepTestFiles = Boolean.FALSE;
     private static GsonConfigurationLoader loader;
     private static File testFile;
 
     @BeforeAll
     private static void init() {
-        testFile = generateTestFile();
-        while (testFile.exists())
-            testFile = generateTestFile();
-        loader = GsonConfigurationLoader
+        if (keepTestFiles)
+            return;
+        testFile = generateValidTestFile();
+        loader = generateLoader();
+    }
+
+    private static GsonConfigurationLoader generateLoader() {
+        return GsonConfigurationLoader
             .builder()
             .adapter(new ConfigAdapter(new GsonBuilder()
                 .serializeNulls()
@@ -49,12 +56,18 @@ class ConfigurationLoaderTest {
             .build();
     }
 
-    private static File generateTestFile() {
-        return new File("Test-"+ UUID.randomUUID().toString().substring(0, 8)+".json");
+    private static File generateValidTestFile() {
+        String filename = "Test-" + UUID.randomUUID().toString().substring(0, 8) + ".json";
+        File file = new File(filename);
+        while (file.exists())
+            file = new File(filename);
+        return file;
     }
 
     @AfterAll
     private static void clear() throws IOException {
+        if (keepTestFiles)
+            return;
         System.gc();
         try {
             Files.delete(testFile.toPath());
@@ -64,62 +77,101 @@ class ConfigurationLoaderTest {
         }
     }
 
+    private static Configuration generateNumberedConfig() {
+        Configuration numberedConfig = new Configuration();
+        numberedConfig.node("number", "zero").set(0d);
+        numberedConfig.node("number", "one").set(1d);
+        numberedConfig.node("text", "zero").set("zero");
+        numberedConfig.node("text", "one").set("one");
+        return numberedConfig;
+    }
+
+    private static void checkNumberedConfig(Configuration numberedConfig) {
+        assertEquals(0d, numberedConfig.node("number", "zero").getAsDouble());
+        assertEquals(1d, numberedConfig.node("number", "one").getAsDouble());
+        assertEquals("zero", numberedConfig.node("text", "zero").getAsString());
+        assertEquals("one", numberedConfig.node("text", "one").getAsString());
+    }
+
+    @BeforeEach
+    private void initEach() {
+        if (!keepTestFiles)
+            return;
+        testFile = generateValidTestFile();
+        loader = generateLoader();
+    }
+
+    @Test
+    void navigationTest() {
+        Configuration config = new Configuration();
+        ConfigNode aNode = config.node("a");
+        ConfigNode bNode = config.node("b");
+        assertEquals(aNode.parent(), bNode.parent(), "Both nodes should have the same parent (config, root-node, id \"\")");
+        assertEquals(config, aNode.parent(), "Both nodes should have the same parent (config, root-node, id \"\")");
+    }
+
+    @Test
+    void storageTest() {
+        checkNumberedConfig(generateNumberedConfig());
+    }
+
+    @Test
+    void copyTest() {
+        Configuration configuration = generateNumberedConfig();
+
+        Configuration copy = configuration.copy();
+
+        checkNumberedConfig(copy);
+    }
+
+    @Test
+    void equalsTest1() {
+        Configuration configuration = generateNumberedConfig();
+
+        assertNotEquals(configuration, new Configuration());
+    }
+
+    @Test
+    void equalsTest2() {
+        Configuration configuration = generateNumberedConfig();
+
+        assertEquals(configuration, configuration.copy());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"foo", "banana"})
-    void stringTest(String str) throws IOException {
-        Configuration configuration = new Configuration()
-            .set("foo", str);
+    void stringTest(String string) throws IOException {
+        Configuration configuration = new Configuration();
+        ConfigNode fooNode = configuration.node("foo");
+        fooNode.set(string);
 
         loader.save(configuration);
         Configuration loaded = loader.load();
 
-        assertEquals(str, loaded.get("foo", String.class), "Set value should be returned.");
+        assertEquals(string, loaded.node("foo").getAsString(), "Set value should be returned.");
     }
 
     @Test
     void nullTest() throws IOException {
-        Configuration configuration = new Configuration()
-            .set("foo", null);
+        Configuration configuration = new Configuration();
+        ConfigNode fooNode = configuration.node("foo");
+        fooNode.set(null);
 
         loader.save(configuration);
         Configuration loaded = loader.load();
 
-        assertNull(loaded.get("foo", Object.class), "Set value should be returned.");
-        assertNull(loaded.get("boo"));
+        assertNull(loaded.node("foo").get(), "Set value should be returned.");
+        assertNull(loaded.node("boo").get());
     }
 
     @Test
-    void subClusterTest() throws IOException {
-        Configuration configuration = new Configuration()
-            .set("number.zero", 0)
-            .set("number.one", 1)
-            .set("text.zero", "zero")
-            .set("text.one", "one");
+    void loaderTest() throws IOException {
+        Configuration configuration = generateNumberedConfig();
 
         loader.save(configuration);
         Configuration loaded = loader.load();
 
-        assertEquals(0, loaded.get("number.zero", Double.class).intValue());
-        assertEquals(1, loaded.get("number.one", Double.class).intValue());
-        assertEquals("zero", loaded.get("text.zero", String.class));
-        assertEquals("one", loaded.get("text.one", String.class));
-    }
-
-    @Test
-    void selectorTest() throws IOException {
-        Configuration configuration = new Configuration()
-            .set("english.house", "House")
-            .set("danish.house", "Hus")
-            .set("*.modernLanguage", true)
-            .set("latin.house", "domum")
-            .set("latin.modernLanguage", false);
-
-
-        loader.save(configuration);
-        Configuration loaded = loader.load();
-
-        assertTrue(loaded.get("english.modernLanguage", Boolean.class));
-        assertFalse(loaded.get("latin.modernLanguage", Boolean.class));
-        assertEquals("Hus", loaded.get("danish.house"));
+        checkNumberedConfig(loaded);
+        assertTrue(configuration.equalsNode(loaded));
     }
 }

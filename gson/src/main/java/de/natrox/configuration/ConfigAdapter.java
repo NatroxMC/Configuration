@@ -23,12 +23,10 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
-import de.natrox.common.container.Pair;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 public class ConfigAdapter extends TypeAdapter<Configuration> {
 
@@ -45,50 +43,65 @@ public class ConfigAdapter extends TypeAdapter<Configuration> {
 
     @Override
     public Configuration read(JsonReader in) throws IOException {
-        return new Configuration(this.convertCluster(in));
+        //return new Configuration(this.convertNode(in, null, ""));
+        return convertNode(in, new Configuration());
     }
 
-    private ConfigCluster convertCluster(JsonReader in) throws IOException {
-        ConfigCluster value = new ConfigCluster();
+    private <C extends ConfigNode> C convertNode(JsonReader in, @NotNull C value) throws IOException {
         if (in.peek().equals(JsonToken.BEGIN_OBJECT)) {
             in.beginObject();
             String name;
             while (in.peek().equals(JsonToken.NAME)) {
                 name = in.nextName();
                 if ("value".equals(name))
-                    value.setValue(gson.fromJson(in, Object.class));
-                else
-                    value.addChild(name, convertCluster(in));
+                    value.set(gson.fromJson(in, Object.class));
+                else {
+                    ConfigNode subNode = new ConfigNode(name);
+                    subNode.parent(value);
+                    value.addNode(this.convertNode(in, subNode));
+                }
             }
             in.endObject();
         } else
-            value.setValue(gson.fromJson(in, Object.class));
+            value.set(gson.fromJson(in, Object.class));
         return value;
     }
 
-    private Iterable<? extends Pair<String, ConfigCluster>> convertChildren(JsonReader in) throws IOException {
-        Set<Pair<String, ConfigCluster>> value = new HashSet<>();
-        in.beginObject();
-        while (in.peek() == JsonToken.NAME)
-            value.add(Pair.of(in.nextName(), this.convertCluster(in)));
-        in.endObject();
+    private ConfigNode convertNode(JsonReader in, @Nullable ConfigNode parentNode, @NotNull String id) throws IOException {
+        ConfigNode value = new ConfigNode(id);
+        value.parent(parentNode);
+        if (in.peek().equals(JsonToken.BEGIN_OBJECT)) {
+            in.beginObject();
+            String name;
+            while (in.peek().equals(JsonToken.NAME)) {
+                name = in.nextName();
+                if ("value".equals(name))
+                    value.set(gson.fromJson(in, Object.class));
+                else
+                    value.addNode(this.convertNode(in, value, name));
+            }
+            in.endObject();
+        } else
+            value.set(gson.fromJson(in, Object.class));
         return value;
     }
 
     @Override
     public void write(JsonWriter out, Configuration value) {
-        this.gson.toJson(this.convertCluster(value), out);
+        this.gson.toJson(this.convertNode(value), out);
     }
 
-    private JsonObject convertCluster(ConfigCluster cluster) {
+    private JsonObject convertNode(ConfigNode node) {
         JsonObject value = new JsonObject();
-        if (cluster.hasValue())
-            value.add("value", gson.toJsonTree(cluster.value()));
-        for (Map.Entry<String, ConfigCluster> childInfo : cluster.subCluster().entrySet()) {
-            if (childInfo.getValue().hasSubCluster())
-                value.add(childInfo.getKey(), convertCluster(childInfo.getValue()));
-            else
-                value.add(childInfo.getKey(), gson.toJsonTree(childInfo.getValue().value()));
+        if (node.hasValue())
+            value.add("value", gson.toJsonTree(node.get()));
+        for (ConfigNode subNode : node.subNodes().values()) {
+            if ((!subNode.hasSubNodes()) && (!subNode.hasValue()))
+                continue;
+            if (subNode.hasSubNodes())
+                value.add(subNode.id(), this.convertNode(subNode));
+            else //hasValue, but not subCluster
+                value.add(subNode.id(), gson.toJsonTree(subNode.get()));
         }
         return value;
     }

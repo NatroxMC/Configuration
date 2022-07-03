@@ -16,52 +16,41 @@
 
 package de.natrox.configuration;
 
-import de.natrox.common.validate.Check;
-import org.jetbrains.annotations.NotNull;
+import de.natrox.configuration.exception.ConfigException;
 import org.jetbrains.annotations.Nullable;
 
-public class Configuration extends ConfigCluster {
-
-    Configuration(ConfigCluster cluster) {
-        this.addClusterEntries(cluster.subCluster().entrySet());
-    }
+public class Configuration extends ConfigNode {
 
     public Configuration() {
-        super();
+        super("");
     }
 
-    public <V> @NotNull Configuration set(@NotNull String key, @Nullable V value) {
-        this.validateKey(key);
-        super.set(key.split("\\."), value, 0);
-        return this;
+    @Override
+    public boolean hasParent() {
+        return false;
     }
 
-    public <V> @Nullable V get(@NotNull String key, @NotNull Class<V> expected) {
-        Check.notNull(expected, "Expected class must not be null.");
-        Check.stateCondition(key.contains("*"), "'*' expressions forbidden in getters.");
-        return super.get(this.validateKey(key), expected, 0);
+    @Override
+    public boolean isRoot() {
+        return true;
     }
 
-    public <V> @Nullable V get(@NotNull String key) {
-        Check.stateCondition(key.contains("*"), "'*' expressions forbidden in getters.");
-        return super.get(this.validateKey(key), 0);
+    @Override
+    public @Nullable ConfigNode parent() {
+        return null;
     }
 
-    private String[] validateKey(String key) {
-        Check.notNull(key, "Key must not be null.");
-        Check.stateCondition("".equals(key), "Key must not be empty.");
-        Check.stateCondition(key.contains("..") || key.startsWith("."), "Cluster key must not be empty.");
-        Check.stateCondition(key.endsWith("."), "Property key must not be empty.");
-        String[] keys = key.split("\\.");
-        for (String singleKey : keys)
-            this.validateSingleKey(singleKey);
-        return keys;
+    @Override
+    public void parent(ConfigNode newParent) {
+        throw new ConfigException("Configuration can not have a parent.");
     }
 
-    private void validateSingleKey(String singleKey) {
-        if (!"*".equals(singleKey))
-            Check.stateCondition(singleKey.contains("*"), "Key must not contain '*'.");
-        Check.stateCondition(singleKey.equals("children"), "Key must not equal \"children\", as this expression could cause problems.");
-        Check.stateCondition(singleKey.equals("value"), "Key must not equal \"value\", as this expression could cause problems.");
+    @Override
+    public Configuration copy(String id) {
+        throw new ConfigException("Configuration can not have an id. Use copy() instead.");
+    }
+
+    public Configuration copy() {
+        return ConfigNode.copy(this, new Configuration());
     }
 }

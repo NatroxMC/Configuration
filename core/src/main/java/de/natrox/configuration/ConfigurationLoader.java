@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-rootProject.name = "Configuration"
+package de.natrox.configuration;
 
-include(
-    ":core",
-    ":gson",
-    ":jackson",
-    ":yaml"
-)
+import de.natrox.common.builder.IBuilder;
+
+import java.io.IOException;
+
+public interface ConfigurationLoader {
+
+    Configuration load() throws IOException;
+
+    void save(Configuration config) throws IOException;
+
+    interface Builder<C extends ConfigurationLoader> extends IBuilder<C> {
+
+    }
+}

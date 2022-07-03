@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-rootProject.name = "Configuration"
+dependencies {
 
-include(
-    ":core",
-    ":gson",
-    ":jackson",
-    ":yaml"
-)
+}
+
+tasks.withType<Jar> {
+    archiveFileName.set("configuration-jackson.jar")
+}
